@@ -74,9 +74,10 @@ Deterministic  Indeterministic
 ### Retrieval System (Deterministic Queries)
 | K | Intent Match | Category Match |
 |---|--------------|----------------|
-| Top-1 | 100.00% | 100.00% |
-| Top-3 | 100.00% | 100.00% |
+| Top-1 | 98.8% | 100.00% |
+| Top-3 | 99.7% | 100.00% |
 | **Latency** | **~30ms** | |
+> **Note:** Slight drop from 100% is due to strict train/test separation (preventing data leakage), providing realistic performance on unseen data.
 
 ### LLM Generation (Indeterministic Queries)
 | Metric | Score |
@@ -253,6 +254,15 @@ drive.mount('/content/drive')
 - Saved compute resources
 - Informed full training strategy
 
+### 4. **Data Leakage Prevention (Master Split)**
+- **Strict 80/20 Split:** Implemented a "Master Train/Test Split" at the very beginning.
+- **Physical Separation:** Saved `train_dataset.csv` and `test_dataset.csv` immediately to disk.
+- **Zero Leakage:** The test set (20%) is **never** touched during:
+    - TF-IDF Vectorization (fit only on train)
+    - FAISS Index Building (only train examples indexed)
+    - LLM Fine-tuning (only train examples used)
+- **Realistic Metrics:** Ensures reported accuracy reflects true generalization capability.
+
 ---
 
 ## 📊 Comparison with Baselines
@@ -318,19 +328,19 @@ result = chatbot.respond(query)
 ### Binary Classifier
 - **Algorithm:** Logistic Regression
 - **Features:** TF-IDF (1000 features, 1-2 grams)
-- **Training Size:** 13,921 examples
+- **Training Size:** ~14,319 examples (80% of dataset)
 - **Training Time:** <1 minute
 
 ### Retrieval System
 - **Embedding Model:** `all-MiniLM-L6-v2`
 - **Index Type:** FAISS Flat L2
-- **Index Size:** 7,717 Q&A pairs
+- **Index Size:** ~6,334 Q&A pairs (80% of deterministic)
 - **Build Time:** ~5 seconds
 
 ### LLM Fine-tuning
 - **Base Model:** Microsoft Phi-2 (2.7B params)
 - **Method:** LoRA (r=8, α=16)
-- **Training Data:** 450 examples (pilot) / 11,971 (full)
+- **Training Data:** 450 examples (pilot) / ~9,577 (full 80% split)
 - **Epochs:** 3
 - **Batch Size:** 8 (effective)
 - **Training Time:** ~2 min (pilot) / ~48 min (full) on T4 GPU
